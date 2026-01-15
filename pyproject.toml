@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-rss"
+version = "0.1.0"
+description = "RSS feed screening system for academic papers using LLM APIs"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Ken Chen", email = "chenkenbio@gmail.com"}
+]
+dependencies = [
+    "feedparser>=6.0",
+    "anthropic>=0.18",
+    "openai>=1.0",
+    "google-genai>=1.0",
+    "click>=8.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+agent-rss = "agent_rss.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]

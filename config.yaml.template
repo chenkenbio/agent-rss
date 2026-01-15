@@ -1,0 +1,22 @@
+# agent-rss configuration
+# Copy this file to config.yaml and fill in your settings
+
+llm:
+  provider: claude  # Options: claude, openai, gemini
+
+api_keys:
+  # Set these via environment variables or directly here
+  anthropic: ${ANTHROPIC_API_KEY}
+  openai: ${OPENAI_API_KEY}
+  google: ${GOOGLE_API_KEY}
+
+email:
+  smtp_server: smtp.gmail.com
+  smtp_port: 587
+  username: your-email@gmail.com
+  password: ${EMAIL_PASSWORD}  # Use app password for Gmail
+  recipient: your-email@gmail.com
+  sender_name: agent-rss
+
+database:
+  path: ~/.agent-rss/papers.db
