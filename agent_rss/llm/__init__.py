@@ -6,7 +6,7 @@ from .openai import OpenAILLM
 from .gemini import GeminiLLM
 
 
-def get_llm(provider: str, api_key: str) -> BaseLLM:
+def get_llm(provider: str, api_key: str, model: str | None = None) -> BaseLLM:
     """
     Get LLM instance by provider name.
 
@@ -16,6 +16,8 @@ def get_llm(provider: str, api_key: str) -> BaseLLM:
         Provider name: 'claude', 'openai', or 'gemini'
     api_key : str
         API key for the provider
+    model : str | None
+        Optional model name (uses provider default if not specified)
 
     Returns
     -------
@@ -29,6 +31,8 @@ def get_llm(provider: str, api_key: str) -> BaseLLM:
     }
     if provider not in providers:
         raise ValueError(f"Unknown provider: {provider}. Choose from: {list(providers.keys())}")
+    if model:
+        return providers[provider](api_key, model=model)
     return providers[provider](api_key)
 
 

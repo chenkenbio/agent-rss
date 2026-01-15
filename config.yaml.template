@@ -3,6 +3,7 @@
 
 llm:
   provider: claude  # Options: claude, openai, gemini
+  # model: gpt-4o-mini  # Optional: specify model (defaults: gpt-4o-mini, claude-sonnet-4-20250514, gemini-2.0-flash)
 
 api_keys:
   # Set these via environment variables or directly here

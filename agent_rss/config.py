@@ -151,3 +151,85 @@ def load_interests(interests_path: Path | str) -> str:
 
     with open(interests_path) as f:
         return f.read().strip()
+
+
+def parse_examples(examples_path: Path | str) -> dict:
+    """
+    Parse liked/disliked paper examples from examples.md.
+
+    File format:
+    ```
+    # Liked Papers
+    ## Example 1
+    - **Title**: Paper title
+    - **Abstract**: Optional abstract
+    - **Reason**: Why I like it
+
+    # Disliked Papers
+    ## Example 1
+    - **Title**: Paper title
+    - **Reason**: Why I don't want it
+    ```
+
+    Parameters
+    ----------
+    examples_path : Path | str
+        Path to examples.md file
+
+    Returns
+    -------
+    dict
+        {"liked": [...], "disliked": [...]} or empty lists if file missing/empty
+    """
+    examples_path = Path(examples_path)
+    result = {"liked": [], "disliked": []}
+
+    if not examples_path.exists():
+        return result
+
+    with open(examples_path) as f:
+        content = f.read().strip()
+
+    if not content:
+        return result
+
+    current_section = None  # "liked" or "disliked"
+    current_example = {}
+
+    for line in content.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+
+        # Section headers
+        line_lower = line.lower()
+        if line.startswith('# ') and 'liked' in line_lower and 'disliked' not in line_lower:
+            # Save previous example if exists
+            if current_example.get('title'):
+                result[current_section].append(current_example)
+            current_section = "liked"
+            current_example = {}
+        elif line.startswith('# ') and 'disliked' in line_lower:
+            if current_example.get('title'):
+                result[current_section].append(current_example)
+            current_section = "disliked"
+            current_example = {}
+        elif line.startswith('## '):
+            # New example within section
+            if current_example.get('title') and current_section:
+                result[current_section].append(current_example)
+            current_example = {}
+        elif current_section:
+            # Parse example fields
+            if line.startswith('- **Title**:'):
+                current_example['title'] = line.split(':', 1)[1].strip()
+            elif line.startswith('- **Abstract**:'):
+                current_example['abstract'] = line.split(':', 1)[1].strip()
+            elif line.startswith('- **Reason**:'):
+                current_example['reason'] = line.split(':', 1)[1].strip()
+
+    # Save last example
+    if current_example.get('title') and current_section:
+        result[current_section].append(current_example)
+
+    return result

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from .config import load_config, load_interests, parse_rss_list, parse_rss_list_grouped
+from .config import load_config, load_interests, parse_examples, parse_rss_list, parse_rss_list_grouped
 from .db import PaperDatabase
 from .email_sender import send_email, send_test_email
 from .feed import fetch_feed
@@ -79,10 +79,11 @@ def run(ctx, dry_run, days, max_per_feed, verbose):
         click.echo("Error: No config.yaml found. Create one from config.yaml.template")
         sys.exit(1)
 
-    # Load RSS feeds (grouped) and interests
+    # Load RSS feeds (grouped), interests, and examples
     try:
         feed_groups = parse_rss_list_grouped(project_root / "rss_list.md")
         interests = load_interests(project_root / "interests.md")
+        examples = parse_examples(project_root / "examples.md")  # Optional file
     except FileNotFoundError as e:
         click.echo(f"Error: {e}")
         sys.exit(1)
@@ -92,6 +93,8 @@ def run(ctx, dry_run, days, max_per_feed, verbose):
     for group, urls in feed_groups.items():
         click.echo(f"  [{group}]: {len(urls)} feed(s)")
     click.echo(f"Research interests: {interests[:100]}...")
+    if examples["liked"] or examples["disliked"]:
+        click.echo(f"Examples: {len(examples['liked'])} liked, {len(examples['disliked'])} disliked")
 
     # Initialize database
     db_path = config.get("database", {}).get("path", "~/.agent-rss/papers.db")
@@ -110,8 +113,9 @@ def run(ctx, dry_run, days, max_per_feed, verbose):
         click.echo(f"Error: API key for {provider} not configured")
         sys.exit(1)
 
-    llm = get_llm(provider, api_key)
-    click.echo(f"Using LLM provider: {provider}")
+    model = config["llm"].get("model")  # Optional, uses provider default if not set
+    llm = get_llm(provider, api_key, model=model)
+    click.echo(f"Using LLM: {provider}" + (f" ({model})" if model else ""))
 
     # Fetch papers from all feeds, tracking group membership
     # Build url -> group mapping
@@ -180,6 +184,7 @@ def run(ctx, dry_run, days, max_per_feed, verbose):
                 abstract=paper.abstract,
                 source=paper.source,
                 interests=interests,
+                examples=examples,
             )
 
             # Apply group-specific criteria

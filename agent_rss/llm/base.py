@@ -23,7 +23,7 @@ class BaseLLM(ABC):
 
 ## Research Interests
 {interests}
-
+{examples_section}
 ## Paper Information
 - **Title**: {title}
 - **Authors**: {authors}
@@ -39,6 +39,7 @@ class BaseLLM(ABC):
    - Data: [new dataset/resource if any, otherwise skip]
    - Highlights: [other key points, comma-separated]
 4. If no abstract (title only), just list keywords
+5. Learn from user's liked/disliked examples if provided - they show specific preferences
 
 ## Response Format
 FIELD_MATCH: [yes/no]
@@ -87,6 +88,39 @@ SUMMARY: Not related
         """
         pass
 
+    def _format_examples_section(self, examples: dict | None) -> str:
+        """Format examples into prompt section."""
+        if not examples:
+            return ""
+
+        liked = examples.get("liked", [])
+        disliked = examples.get("disliked", [])
+
+        if not liked and not disliked:
+            return ""
+
+        sections = []
+
+        if liked:
+            sections.append("\n## User's Liked Paper Examples (screen IN papers like these)")
+            for i, ex in enumerate(liked, 1):
+                parts = [f"- Title: {ex.get('title', 'N/A')}"]
+                if ex.get('abstract'):
+                    parts.append(f"  Abstract: {ex['abstract'][:200]}...")
+                if ex.get('reason'):
+                    parts.append(f"  Reason: {ex['reason']}")
+                sections.append(f"{i}. " + "\n   ".join(parts))
+
+        if disliked:
+            sections.append("\n## User's Disliked Paper Examples (screen OUT papers like these)")
+            for i, ex in enumerate(disliked, 1):
+                parts = [f"- Title: {ex.get('title', 'N/A')}"]
+                if ex.get('reason'):
+                    parts.append(f"  Reason: {ex['reason']}")
+                sections.append(f"{i}. " + "\n   ".join(parts))
+
+        return "\n".join(sections) + "\n"
+
     def screen_paper(
         self,
         title: str,
@@ -94,6 +128,7 @@ SUMMARY: Not related
         abstract: str,
         source: str,
         interests: str,
+        examples: dict | None = None,
     ) -> ScreeningResult:
         """
         Screen a paper against research interests.
@@ -110,14 +145,19 @@ SUMMARY: Not related
             Journal/conference name
         interests : str
             Research interests to match against
+        examples : dict | None
+            Optional dict with "liked" and "disliked" paper examples
 
         Returns
         -------
         ScreeningResult
             Screening result with relevance and summary
         """
+        examples_section = self._format_examples_section(examples)
+
         prompt = self.SCREENING_PROMPT.format(
             interests=interests,
+            examples_section=examples_section,
             title=title,
             authors=authors,
             abstract=abstract,
